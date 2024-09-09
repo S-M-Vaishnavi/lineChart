@@ -1,0 +1,368 @@
+    // const options = {
+    //     chart: {
+    //         type: 'line',
+    //         // backgroundColor: '#f4f4f4',
+    //         backgroundColor: 'black',
+    //         margin: [50, 50, 50, 50]
+    //     },
+    //     title: {
+    //         text: 'Monthly Average Temperature'
+    //     },
+    //     subtitle: {
+    //         text: 'Source: WorldClimate.com'
+    //     },
+    //     xAxis: {
+    //         categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    //         title: {
+    //             text: 'Month'
+    //         }
+    //     },
+    //     yAxis: {
+    //         title: {
+    //             text: 'Temperature (°C)'
+    //         },
+    //         gridLineWidth: 1
+    //     },
+    //     tooltip: {
+    //         valueSuffix: '°C'
+    //     },
+    //     legend: {
+    //         layout: 'vertical',
+    //         align: 'right',
+    //         verticalAlign: 'middle'
+    //     },
+    //     series: [
+    //         {
+    //             name: 'Tokyo',
+    //             data: [7.0, 6.9, 9.5, 14.5, 18.2, 21.5, 25.2, 26.5, 23.3, 18.3, 13.9, 9.6]
+    //         },
+    //         {
+    //             name: 'New York',
+    //             data: [-0.2, 0.8, 5.7, 11.3, 17.0, 22.0, 24.8, 24.1, 20.1, 14.1, 8.6, 2.5]
+    //         }
+    //     ],
+    //     colors: ['#058DC7', '#50B432'],
+    //     plotOptions: {
+    //         line: {
+    //             dataLabels: {
+    //                 enabled: true
+    //             },
+    //             enableMouseTracking: true
+    //         }
+    //     },
+    //     credits: {
+    //         enabled: false
+    //     },
+    //     exporting: {
+    //         enabled: true
+    //     },
+    //     responsive: {
+    //         rules: [{
+    //             condition: {
+    //                 maxWidth: 500
+    //             },
+    //             chartOptions: {
+    //                 legend: {
+    //                     layout: 'horizontal',
+    //                     align: 'center',
+    //                     verticalAlign: 'bottom'
+    //                 }
+    //             }
+    //         }]
+    //     }
+    // };
+
+
+    with time and intervals
+    import React, { useMemo } from 'react';
+import Highcharts from 'highcharts';
+import HighchartsReact from 'highcharts-react-official';
+
+interface LineChartProps {
+    selectedParameters: string[];
+    selectedTime: string;
+    selectedGrouping: string;
+}
+
+const LineChart: React.FC<LineChartProps> = ({ selectedParameters, selectedTime, selectedGrouping }) => {
+    // Generate xAxis categories based on selected time and grouping intervals
+    const generateXAxisCategories = () => {
+        const currentTime = new Date().getTime();
+        let interval = 0;
+
+        switch (selectedGrouping) {
+            case '1 min':
+                interval = 60 * 1000; // 1 minute in milliseconds
+                break;
+            case '5 min':
+                interval = 5 * 60 * 1000; // 5 minutes in milliseconds
+                break;
+            case '15 min':
+                interval = 15 * 60 * 1000; // 15 minutes in milliseconds
+                break;
+            case '30 min':
+                interval = 30 * 60 * 1000; // 30 minutes in milliseconds
+                break;
+            case '1 hour':
+                interval = 60 * 60 * 1000; // 1 hour in milliseconds
+                break;
+            case '1 day':
+                interval = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+                break;
+            default:
+                interval = 60 * 1000; // Default 1 minute
+        }
+
+        const categories = [];
+
+        if (selectedTime === '15 min') {
+            for (let i = 0; i <= 15; i++) {
+                categories.push(new Date(currentTime + i * interval).toLocaleTimeString());
+            }
+        } else if (selectedTime === '1 hour') {
+            for (let i = 0; i <= 60; i += 5) {
+                categories.push(new Date(currentTime + i * interval).toLocaleTimeString());
+            }
+        } else if (selectedTime === '24 hours') {
+            for (let i = 0; i <= 24; i++) {
+                categories.push(new Date(currentTime + i * interval).toLocaleTimeString());
+            }
+        } else if (selectedTime === '1 week') {
+            for (let i = 0; i < 7; i++) {
+                categories.push(new Date(currentTime + i * interval * 24).toLocaleDateString());
+            }
+        } else if (selectedTime === '1 month') {
+            for (let i = 0; i < 30; i++) {
+                categories.push(new Date(currentTime + i * interval * 24).toLocaleDateString());
+            }
+        } else {
+            // Custom Date Handling
+            categories.push('Custom Date');
+        }
+        console.log('Categories',categories)
+        return categories;
+    };
+
+    // Memoize options to recalculate only when selectedTime or selectedGrouping changes
+    const options = useMemo(() => ({
+        xAxis: {
+            categories: generateXAxisCategories(),
+            title: {
+                text: selectedTime === '1 week' || selectedTime === '1 month' ? 'Days' : 'Time',
+            },
+        },
+        yAxis: [
+            {
+                title: {
+                    text: 'Temperature (°C)',
+                },
+                opposite: false,
+            },
+            {
+                title: {
+                    text: 'Humidity (%) / Oxygen (%)',
+                },
+                opposite: true,
+            },
+        ],
+        series: [
+            {
+                name: 'Temperature',
+                data: selectedParameters.includes('temperature') ? [30, 25, 27, 22, 26, 28, 31, 29, 27, 24, 22, 25] : [],
+                color: 'rgba(255, 99, 132, 1)',
+                yAxis: 0,
+            },
+            {
+                name: 'Humidity',
+                data: selectedParameters.includes('humidity') ? [70, 60, 65, 55, 60, 70, 72, 65, 60, 55, 50, 68] : [],
+                color: 'rgba(54, 162, 235, 1)',
+                yAxis: 1,
+            },
+            {
+                name: 'Oxygen',
+                data: selectedParameters.includes('oxygen') ? [21, 20, 19, 21, 20, 22, 21, 20, 19, 18, 20, 21] : [],
+                color: 'rgba(75, 192, 192, 1)',
+                yAxis: 1,
+            }
+        ],
+        credits: {
+            enabled: false,
+        },
+    }), [selectedTime, selectedGrouping, selectedParameters]);
+
+    return <HighchartsReact highcharts={Highcharts} options={options} />;
+};
+
+export default LineChart;
+
+
+import React, { useState, useEffect } from 'react';
+
+interface DropdownProps {
+    onParameterChange: (parameter: string, isChecked: boolean) => void;
+    onTimeChange: (time: string) => void;
+    onGroupingChange: (interval: string) => void;
+}
+
+const Dropdown: React.FC<DropdownProps> = ({ onParameterChange, onTimeChange, onGroupingChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isTimeOpen, setIsTimeOpen] = useState(false);
+    const [isGroupingOpen, setIsGroupingOpen] = useState(false);
+    const [selectedTime, setSelectedTime] = useState<string>('15 min');
+    const parameters = ['temperature', 'humidity', 'oxygen'];
+
+    const timeOptions = ['15 min', '1 hour', '24 hours', '1 week', '1 month', 'Custom Date'];
+    const [groupingOptions, setGroupingOptions] = useState<string[]>(['1 min', '5 min']);
+
+    useEffect(() => {
+        switch (selectedTime) {
+            case '15 min':
+                setGroupingOptions(['1 min', '5 min']);
+                break;
+            case '1 hour':
+                setGroupingOptions(['1 min', '5 min', '15 min', '30 min']);
+                break;
+            case '24 hours':
+                setGroupingOptions(['1 min', '5 min', '15 min', '30 min', '1 hour']);
+                break;
+            case '1 week':
+                setGroupingOptions(['15 min', '1 hour', '1 day']);
+                break;
+            case '1 month':
+                setGroupingOptions(['30 min', '1 hour', '1 day']);
+                break;
+            case 'Custom Date':
+                setGroupingOptions(['Custom Grouping']);
+                break;
+            default:
+                setGroupingOptions([]);
+        }
+    }, [selectedTime]);
+
+    const handleCheckboxChange = (parameter: string, isChecked: boolean) => {
+        onParameterChange(parameter, isChecked);
+    };
+
+    const handleTimeChange = (time: string) => {
+        setSelectedTime(time);
+        onTimeChange(time);
+    };
+
+    const handleGroupingChange = (interval: string) => {
+        onGroupingChange(interval);
+    };
+
+    return (
+        <div className="relative space-y-4 flex justify-center items-center justify-around">
+            <div>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                    Select Parameters
+                </button>
+                {isOpen && (
+                    <div className="absolute mt-2 bg-white border rounded shadow-lg z-10">
+                        {parameters.map((param) => (
+                            <label key={param} className="block p-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    onChange={(e) => handleCheckboxChange(param, e.target.checked)}
+                                    className="mr-2"
+                                />
+                                {param.charAt(0).toUpperCase() + param.slice(1)}
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div>
+                <button
+                    onClick={() => setIsTimeOpen(!isTimeOpen)}
+                    className="bg-green-500 text-white px-4 py-2 rounded"
+                >
+                    Select Time Interval
+                </button>
+                {isTimeOpen && (
+                    <div className="absolute mt-2 bg-white border rounded shadow-lg z-10">
+                        {timeOptions.map((time) => (
+                            <label key={time} className="block p-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="time"
+                                    onChange={() => handleTimeChange(time)}
+                                    className="mr-2"
+                                />
+                                {time}
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div>
+                <button
+                    onClick={() => setIsGroupingOpen(!isGroupingOpen)}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                >
+                    Select Grouping Interval
+                </button>
+                {isGroupingOpen && (
+                    <div className="absolute mt-2 bg-white border rounded shadow-lg z-10">
+                        {groupingOptions.map((interval) => (
+                            <label key={interval} className="block p-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="grouping"
+                                    onChange={() => handleGroupingChange(interval)}
+                                    className="mr-2"
+                                />
+                                {interval}
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Dropdown;
+
+import React, { useState } from 'react';
+import Dropdown from '../src/components/DropDown';
+import LineChart from '../src/components/LineChart';
+
+const App: React.FC = () => {
+    // const [selectedTime, setSelectedTime] = useState<string>('15 min');
+    // const [selectedGrouping, setSelectedGrouping] = useState<string>('1 min');
+    const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
+
+    // const handleTimeChange = (time: string) => {
+    //     setSelectedTime(time);
+    // };
+
+    // const handleGroupingChange = (grouping: string) => {
+    //     setSelectedGrouping(grouping);
+    // };
+
+    const handleParameterChange = (parameter: string, isChecked: boolean) => {
+        setSelectedParameters((prev) =>
+            isChecked ? [...prev, parameter] : prev.filter((p) => p !== parameter)
+        );
+    };
+
+    return (
+        <div>
+            <Dropdown
+                onParameterChange={handleParameterChange}
+            />
+            <LineChart
+                selectedParameters={selectedParameters}
+            />
+        </div>
+    );
+};
+
+export default App;
